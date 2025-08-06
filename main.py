@@ -98,7 +98,8 @@ async def pdf_to_html_gemini_vision(file: UploadFile = Depends(validate_pdf)):
     images and only inserts a specific URL for a profile picture.
     """
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model_id = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        model = genai.GenerativeModel(model_id)
         pdf_bytes = await file.read()
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
 
