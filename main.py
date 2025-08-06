@@ -5,6 +5,8 @@ import base64
 
 import fitz  # PyMuPDF
 import google.generativeai as genai
+import google.auth.transport.requests
+import urllib.parse
 from fpdf import FPDF
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse
@@ -15,12 +17,24 @@ from dotenv import load_dotenv
 load_dotenv()
 # Create a .env file in the same directory as main.py and add:
 # GOOGLE_API_KEY="your_api_key_here"
+# HTTPS_PROXY="http://your-proxy.com:port"
 API_KEY = os.getenv("GOOGLE_API_KEY")
+HTTPS_PROXY = os.getenv("HTTPS_PROXY")
+
+if HTTPS_PROXY:
+    os.environ['https_proxy'] = HTTPS_PROXY
+    os.environ['http_proxy'] = HTTPS_PROXY
 PROFILE_PICTURE_PLACEHOLDER = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"
 
 # --- Gemini API Initialization ---
 try:
-    genai.configure(api_key=API_KEY)
+    transport = None
+    if HTTPS_PROXY:
+        proxy_url = urllib.parse.urlparse(HTTPS_PROXY)
+        transport = google.auth.transport.requests.ProxiedTransport(
+            proxy_url.geturl(),
+        )
+    genai.configure(api_key=API_KEY, transport=transport)
 except Exception as e:
     print(f"Warning: Could not configure Gemini API. {e}")
 
