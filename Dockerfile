@@ -42,8 +42,8 @@ COPY main.py .
 
 # Expose the port the app will run on.
 # CapRover expects the application to listen on port 80.
-EXPOSE 80
+EXPOSE 8002
 
 # Define the command to run the application.
 # This command starts the Uvicorn server to listen on all interfaces on port 80.
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
