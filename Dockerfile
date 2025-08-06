@@ -1,0 +1,49 @@
+# ---- Base Stage ----
+# Use an official Python runtime as a parent image.
+# Using a specific version is better for reproducibility.
+FROM python:3.10-slim AS base
+
+# Set environment variables
+# Prevents python from writing .pyc files to disc
+ENV PYTHONDONTWRITEBYTECODE 1
+# Prevents python from buffering stdout and stderr
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory in the container
+WORKDIR /app
+
+# ---- Builder Stage ----
+# This stage installs the dependencies
+FROM base AS builder
+
+# Install system dependencies that might be needed by Python packages
+# This is a good practice for packages that have C extensions
+RUN apt-get update && apt-get install -y build-essential
+
+# Copy the requirements file and install dependencies
+# This is done in a separate step to leverage Docker's layer caching
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
+
+
+# ---- Final Stage ----
+# This is the final, production-ready image
+FROM base
+
+# Copy the pre-built wheels from the builder stage
+COPY --from=builder /app/wheels /wheels
+
+# Install the Python dependencies from the local wheels
+# This is faster and doesn't require build tools in the final image
+RUN pip install --no-cache /wheels/*
+
+# Copy the application source code into the container
+COPY main.py .
+
+# Expose the port the app will run on.
+# CapRover expects the application to listen on port 80.
+EXPOSE 80
+
+# Define the command to run the application.
+# This command starts the Uvicorn server to listen on all interfaces on port 80.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
