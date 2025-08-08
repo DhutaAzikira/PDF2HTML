@@ -18,7 +18,13 @@ FROM base AS builder
 
 # Install system dependencies that might be needed by Python packages
 # This is a good practice for packages that have C extensions
-RUN apt-get update && apt-get install -y build-essential
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    libpango-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev
 
 # Copy the requirements file and install dependencies
 # This is done in a separate step to leverage Docker's layer caching
@@ -29,6 +35,15 @@ RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 # ---- Final Stage ----
 # This is the final, production-ready image
 FROM base
+
+# Install runtime dependencies for WeasyPrint
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libpango-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy the pre-built wheels from the builder stage
 COPY --from=builder /app/wheels /wheels

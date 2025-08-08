@@ -11,7 +11,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Backgroun
 from fastapi.responses import HTMLResponse, FileResponse
 from PIL import Image
 from dotenv import load_dotenv
-from xhtml2pdf import pisa
+from weasyprint import HTML
 
 # --- Configuration ---
 load_dotenv()
@@ -47,11 +47,11 @@ if not os.path.exists("temp"):
 
 # --- Gemini Vision Prompt ---
 GEMINI_PROMPT = f"""
-Analyze the following image of a document page. Your task is to reconstruct its content and layout into a single, clean HTML file. Use appropriate semantic tags and CSS.
+Analyze the following image of a document page. Your task is to reconstruct its content and layout into a single, clean HTML file. Use Bootstrap for styling to ensure the most accurate and sophisticated representation of the CV.
 
 **CRITICAL INSTRUCTION**: Ignore all charts, graphs, logos, or other generic images. However, if you identify a space for a person's profile picture, you MUST use the exact URL '{PROFILE_PICTURE_PLACEHOLDER}' for the `src` attribute of the `<img>` tag.
 
-Respond with only the raw HTML code.
+Respond with only the raw HTML code, including the Bootstrap CDN link.
 """
 
 # --- Dependency for File Validation ---
@@ -68,40 +68,14 @@ async def validate_html(file: UploadFile = File(...)) -> UploadFile:
 # --- API Endpoints ---
 @app.post("/html-to-pdf/", summary="Convert HTML to PDF")
 async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depends(validate_html)):
-    """Converts an uploaded HTML file to a PDF using xhtml2pdf."""
+    """Converts an uploaded HTML file to a PDF using WeasyPrint."""
     pdf_path = f"temp/{uuid.uuid4()}.pdf"
     try:
         html_content = await file.read()
         html_content_str = html_content.decode("utf-8")
 
-        # Custom CSS to reduce bullet point margins
-        css = """
-        <style>
-            @page {
-                margin: 2cm;
-            }
-            ul, li {
-                margin: 0;
-                padding: 0;
-                padding-left: 1em; /* Adjust indentation */
-            }
-            li {
-                margin-bottom: 0.5em; /* Space between bullet points */
-            }
-        </style>
-        """
-        
-        # Prepend the CSS to the HTML content
-        html_with_css = css + html_content_str
-
-        with open(pdf_path, "w+b") as pdf_file:
-            pisa_status = pisa.CreatePDF(
-                io.StringIO(html_with_css),
-                dest=pdf_file
-            )
-
-        if pisa_status.err:
-            raise HTTPException(500, detail=f"PDF conversion error: {pisa_status.err}")
+        # WeasyPrint can handle CSS within the HTML, so no need to extract it
+        HTML(string=html_content_str).write_pdf(pdf_path)
 
         background_tasks.add_task(os.remove, pdf_path)
         return FileResponse(pdf_path, media_type='application/pdf', filename="converted.pdf")
