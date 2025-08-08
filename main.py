@@ -74,9 +74,29 @@ async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depe
         html_content = await file.read()
         html_content_str = html_content.decode("utf-8")
 
+        # Custom CSS to reduce bullet point margins
+        css = """
+        <style>
+            @page {
+                margin: 2cm;
+            }
+            ul, li {
+                margin: 0;
+                padding: 0;
+                padding-left: 1em; /* Adjust indentation */
+            }
+            li {
+                margin-bottom: 0.5em; /* Space between bullet points */
+            }
+        </style>
+        """
+        
+        # Prepend the CSS to the HTML content
+        html_with_css = css + html_content_str
+
         with open(pdf_path, "w+b") as pdf_file:
             pisa_status = pisa.CreatePDF(
-                io.StringIO(html_content_str),
+                io.StringIO(html_with_css),
                 dest=pdf_file
             )
 
