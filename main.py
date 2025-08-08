@@ -7,11 +7,11 @@ import fitz  # PyMuPDF
 import google.generativeai as genai
 import google.auth.transport.requests
 import urllib.parse
-from fpdf import FPDF
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import HTMLResponse, FileResponse
 from PIL import Image
 from dotenv import load_dotenv
+from xhtml2pdf import pisa
 
 # --- Configuration ---
 load_dotenv()
@@ -45,11 +45,6 @@ app = FastAPI(title="PDF Conversion API")
 if not os.path.exists("temp"):
     os.makedirs("temp")
 
-# --- Custom PDF Class for fpdf2 ---
-class PDF(FPDF):
-    """Custom FPDF class to handle Base64 encoded images."""
-    pass
-
 # --- Gemini Vision Prompt ---
 GEMINI_PROMPT = f"""
 Analyze the following image of a document page. Your task is to reconstruct its content and layout into a single, clean HTML file. Use appropriate semantic tags and CSS.
@@ -73,20 +68,24 @@ async def validate_html(file: UploadFile = File(...)) -> UploadFile:
 # --- API Endpoints ---
 @app.post("/html-to-pdf/", summary="Convert HTML to PDF")
 async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depends(validate_html)):
-    """Converts an uploaded HTML file to a PDF, handling base64 images."""
+    """Converts an uploaded HTML file to a PDF using xhtml2pdf."""
     pdf_path = f"temp/{uuid.uuid4()}.pdf"
     try:
         html_content = await file.read()
+        html_content_str = html_content.decode("utf-8")
 
-        pdf = PDF()
-        pdf.add_page()
-        pdf.write_html(html_content.decode("utf-8"))
-        pdf.output(pdf_path)
+        with open(pdf_path, "w+b") as pdf_file:
+            pisa_status = pisa.CreatePDF(
+                io.StringIO(html_content_str),
+                dest=pdf_file
+            )
+
+        if pisa_status.err:
+            raise HTTPException(500, detail=f"PDF conversion error: {pisa_status.err}")
 
         background_tasks.add_task(os.remove, pdf_path)
         return FileResponse(pdf_path, media_type='application/pdf', filename="converted.pdf")
     except Exception as e:
-        # If the file was created before the exception, it should be cleaned up.
         if os.path.exists(pdf_path):
             os.remove(pdf_path)
         raise HTTPException(500, detail=f"An error occurred during PDF conversion: {e}")
