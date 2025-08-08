@@ -11,7 +11,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Backgroun
 from fastapi.responses import HTMLResponse, FileResponse
 from PIL import Image
 from dotenv import load_dotenv
-from weasyprint import HTML
+import pdfkit
 
 # --- Configuration ---
 load_dotenv()
@@ -68,14 +68,19 @@ async def validate_html(file: UploadFile = File(...)) -> UploadFile:
 # --- API Endpoints ---
 @app.post("/html-to-pdf/", summary="Convert HTML to PDF")
 async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depends(validate_html)):
-    """Converts an uploaded HTML file to a PDF using WeasyPrint."""
+    """Converts an uploaded HTML file to a PDF using pdfkit."""
     pdf_path = f"temp/{uuid.uuid4()}.pdf"
     try:
         html_content = await file.read()
         html_content_str = html_content.decode("utf-8")
 
-        # WeasyPrint can handle CSS within the HTML, so no need to extract it
-        HTML(string=html_content_str).write_pdf(pdf_path)
+        # Options to enable external links like CSS
+        options = {
+            'enable-local-file-access': None,
+            'enable-external-links': None
+        }
+
+        pdfkit.from_string(html_content_str, pdf_path, options=options)
 
         background_tasks.add_task(os.remove, pdf_path)
         return FileResponse(pdf_path, media_type='application/pdf', filename="converted.pdf")

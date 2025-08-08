@@ -21,10 +21,7 @@ FROM base AS builder
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
-    libpango-1.0-0 \
-    libcairo2 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev
+    wkhtmltopdf
 
 # Copy the requirements file and install dependencies
 # This is done in a separate step to leverage Docker's layer caching
@@ -36,13 +33,10 @@ RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 # This is the final, production-ready image
 FROM base
 
-# Install runtime dependencies for WeasyPrint
+# Install runtime dependencies for pdfkit
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    libpango-1.0-0 \
-    libcairo2 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev && \
+    wkhtmltopdf && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the pre-built wheels from the builder stage
