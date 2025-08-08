@@ -47,11 +47,73 @@ if not os.path.exists("temp"):
 
 # --- Gemini Vision Prompt ---
 GEMINI_PROMPT = f"""
-Analyze the following image of a document page. Your task is to reconstruct its content and layout into a single, clean HTML file. Use Bootstrap for styling to ensure the most accurate and sophisticated representation of the CV.
+Analyze the following document page image. Your task is to convert the content from the PDF to HTML format following a specific structure and style. Use the provided HTML template as a design guideline, but adjust the final output to match the content from the PDF.
 
-**CRITICAL INSTRUCTION**: Ignore all charts, graphs, logos, or other generic images. However, if you identify a space for a person's profile picture, you MUST use the exact URL '{PROFILE_PICTURE_PLACEHOLDER}' for the `src` attribute of the `<img>` tag.
+CRITICAL INSTRUCTIONS:
 
-Respond with only the raw HTML code, including the Bootstrap CDN link.
+1. Content to Include:
+   - All text present in the document, including titles, subtitles, paragraphs, and lists.
+   - Contact information such as phone numbers, email addresses, and links to social media profiles or websites.
+   - Details of education, work experience, organizational experience, skills, achievements, and projects.
+   - Dates and time periods relevant to experiences or education.
+
+2. Content to Ignore:
+   - Ignore all charts, graphs, logos, or other generic images that are not relevant to the main text content.
+   - Do not include design elements that cannot be represented in simple HTML format.
+
+3. Handling Images:
+   - If you identify a space for someone's profile picture, use the exact URL '{PROFILE_PICTURE_PLACEHOLDER}' for the src attribute of the <img> tag.
+   - Ensure the profile picture is placed in the appropriate section of the document, usually in the header or near the contact information.
+
+4. Structure and Style:
+   - Use the structure and CSS styles defined in the provided HTML template as a design guideline.
+   - Ensure to follow the defined HTML structure, including the use of appropriate classes and IDs.
+   - Adjust the content from the PDF into the defined HTML structure while maintaining the order and hierarchy of information.
+
+5. HTML Tags to Use:
+   - <!DOCTYPE html>: Declaration of the HTML document type.
+   - <html lang="en">: Opening tag of the HTML document with the English language attribute.
+   - <head>: Head section of the document containing meta information and links to external resources.
+     - <meta charset="UTF-8">: Meta tag to set the document's character set.
+     - <meta name="viewport" content="width=device-width, initial-scale=1.0">: Meta tag to set the document's display on mobile devices.
+     - <title>: Title of the document displayed in the browser tab.
+     - <style>: Tag to add internal CSS styles.
+   - <body>: Body section of the document containing the main content.
+     - <div class="container">: Main container for the content.
+       - <div class="header">: Header section containing the title and contact information.
+         - <h1>: Main title of the document.
+         - <div class="contact-info">: Contact information.
+           - <a>: Links to social media profiles or websites.
+       - <section class="summary">: Summary or brief profile section.
+         - <p>: Paragraph of text.
+       - <section class="education">: Education section.
+         - <h2>: Subtitle of the section.
+         - <div class="education-item">: Education item.
+           - <h3>: Title of the education item.
+           - <p>: Paragraph of text.
+           - <ul>: Unordered list.
+             - <li>: List item.
+       - <section class="work-experience">: Work experience section.
+         - <div class="experience-item">: Work experience item.
+           - <h3>: Title of the work experience item.
+           - <span class="date">: Date or time period.
+           - <ul>: Unordered list.
+             - <li>: List item.
+       - <section class="organizational-experience">: Organizational experience section.
+         - <div class="org-experience-item">: Organizational experience item.
+           - <h3>: Title of the organizational experience item.
+           - <span class="date">: Date or time period.
+           - <ul>: Unordered list.
+             - <li>: List item.
+       - <section class="skills-achievements">: Skills and achievements section.
+         - <ul>: Unordered list.
+           - <li>: List item.
+             - <strong>: Bold text for emphasis.
+
+6. Final Output:
+   - Respond only with raw HTML code.
+   - Ensure the generated HTML code is valid and free of syntax errors.
+   - Adjust the content from the PDF into the defined HTML structure while maintaining the order and hierarchy of information.
 """
 
 # --- Dependency for File Validation ---
