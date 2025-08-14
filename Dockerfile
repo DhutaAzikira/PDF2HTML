@@ -16,6 +16,11 @@ WORKDIR /app
 # This stage installs the dependencies
 FROM base AS builder
 
+# Fix repository URLs for archived Debian Buster
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+        -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
+        -e '/buster-updates/d' /etc/apt/sources.list
+
 # Install build-time dependencies that might be needed by Python packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential && \
@@ -30,6 +35,11 @@ RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 # ---- Final Stage ----
 # This is the final, production-ready image
 FROM base
+
+# Fix repository URLs for archived Debian Buster
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+        -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
+        -e '/buster-updates/d' /etc/apt/sources.list
 
 # Install runtime dependencies for pdfkit
 RUN apt-get update && \
