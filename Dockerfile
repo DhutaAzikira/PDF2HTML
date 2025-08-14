@@ -19,9 +19,19 @@ FROM base AS builder
 # Install system dependencies that might be needed by Python packages
 # This is a good practice for packages that have C extensions
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
     build-essential \
-    wkhtmltopdf
+    wget \
+    libxrender1 \
+    libfontconfig1 \
+    libxext6 \
+    xfonts-75dpi \
+    xfonts-base && \
+    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    apt-get -f install -y && \
+    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file and install dependencies
 # This is done in a separate step to leverage Docker's layer caching
@@ -36,7 +46,16 @@ FROM base
 # Install runtime dependencies for pdfkit
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    wkhtmltopdf && \
+    wget \
+    libxrender1 \
+    libfontconfig1 \
+    libxext6 \
+    xfonts-75dpi \
+    xfonts-base && \
+    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    apt-get -f install -y && \
+    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the pre-built wheels from the builder stage
