@@ -44,17 +44,8 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
 # Install runtime dependencies for pdfkit
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    wget \
-    libxrender1 \
-    libfontconfig1 \
-    libxext6 \
-    xfonts-75dpi \
-    xfonts-base && \
-    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    apt-get -f install -y && \
-    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    rm -rf /var/lib/apt/lists/*
+    wkhtmltopdf \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy the pre-built wheels from the builder stage
 COPY --from=builder /app/wheels /wheels
