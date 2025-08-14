@@ -1,7 +1,7 @@
 # ---- Base Stage ----
 # Use an official Python runtime as a parent image.
 # Using a specific version is better for reproducibility.
-FROM python:3.10-slim AS base
+FROM python:3.10-slim-buster AS base
 
 # Set environment variables
 # Prevents python from writing .pyc files to disc
@@ -16,21 +16,9 @@ WORKDIR /app
 # This stage installs the dependencies
 FROM base AS builder
 
-# Install system dependencies that might be needed by Python packages
-# This is a good practice for packages that have C extensions
+# Install build-time dependencies that might be needed by Python packages
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    wget \
-    libxrender1 \
-    libfontconfig1 \
-    libxext6 \
-    xfonts-75dpi \
-    xfonts-base && \
-    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb && \
-    apt-get -f install -y && \
-    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    apt-get install -y --no-install-recommends build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file and install dependencies
