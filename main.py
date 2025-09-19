@@ -11,7 +11,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Backgroun
 from fastapi.responses import HTMLResponse, FileResponse
 from PIL import Image
 from dotenv import load_dotenv
-from weasyprint import HTML
+from playwright.async_api import async_playwright
 
 # --- Configuration ---
 load_dotenv()
@@ -194,12 +194,19 @@ async def validate_html(file: UploadFile = File(...)) -> UploadFile:
 # --- API Endpoints ---
 @app.post("/html-to-pdf/", summary="Convert HTML to PDF")
 async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depends(validate_html)):
-    """Converts an uploaded HTML file to a PDF using WeasyPrint."""
+    """Converts an uploaded HTML file to a PDF using Playwright."""
     pdf_path = f"temp/{uuid.uuid4()}.pdf"
     try:
         html_content = await file.read()
-        # The base_url is important for resolving relative paths for images or CSS
-        HTML(string=html_content.decode("utf-8"), base_url=file.filename).write_pdf(pdf_path)
+        html_content_str = html_content.decode("utf-8")
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            page = await browser.new_page()
+            await page.set_content(html_content_str)
+            # Set the PDF format to A4
+            await page.pdf(path=pdf_path, format="A4")
+            await browser.close()
 
         background_tasks.add_task(os.remove, pdf_path)
         return FileResponse(pdf_path, media_type='application/pdf', filename="converted.pdf")
@@ -207,7 +214,6 @@ async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depe
         if os.path.exists(pdf_path):
             os.remove(pdf_path)
         raise HTTPException(500, detail=f"An error occurred during PDF conversion: {e}")
-
 @app.post("/pdf-to-html-gemini/", response_class=HTMLResponse, summary="Convert PDF to HTML using Gemini")
 async def pdf_to_html_gemini_vision(file: UploadFile = Depends(validate_pdf)):
     """

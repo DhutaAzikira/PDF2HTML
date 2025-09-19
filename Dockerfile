@@ -1,13 +1,15 @@
 # ---- Base Stage ----
-# UPGRADE: Switched from buster to bullseye for newer system libraries
-FROM python:3.10-slim-bullseye AS base
+FROM python:3.10-slim-buster AS base
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # ---- Builder Stage ----
 FROM base AS builder
-# NOTE: The sed command to fix repository URLs is no longer needed for bullseye
+# Fix repository URLs for archived Debian Buster
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+        -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
+        -e '/buster-updates/d' /etc/apt/sources.list
 # Install build-time dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential && \
@@ -18,17 +20,17 @@ RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # ---- Final Stage ----
 FROM base
-# Install the runtime dependencies for WeasyPrint
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libpango-1.0-0 \
-    libpangoft2-1.0-0 \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Fix repository URLs for archived Debian Buster
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+        -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
+        -e '/buster-updates/d' /etc/apt/sources.list
 
 # Copy and install the pre-built wheels
 COPY --from=builder /app/wheels /wheels
 RUN pip install --no-cache /wheels/*
+
+# Install Playwright browsers and their dependencies
+RUN playwright install --with-deps
 
 # Copy the application source code
 COPY main.py .
