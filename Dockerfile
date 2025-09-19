@@ -25,10 +25,12 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
         -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
         -e '/buster-updates/d' /etc/apt/sources.list
 
-# Install runtime dependencies for WeasyPrint
+# Install the corrected and complete runtime dependencies for WeasyPrint
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    libgobject-2.0-0 libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy and install the pre-built wheels
