@@ -1,15 +1,13 @@
 # ---- Base Stage ----
-FROM python:3.10-slim-buster AS base
+# UPGRADE: Switched from buster to bullseye for newer system libraries
+FROM python:3.10-slim-bullseye AS base
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # ---- Builder Stage ----
 FROM base AS builder
-# Fix repository URLs for archived Debian Buster
-RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
-        -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
-        -e '/buster-updates/d' /etc/apt/sources.list
+# NOTE: The sed command to fix repository URLs is no longer needed for bullseye
 # Install build-time dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential && \
@@ -20,12 +18,7 @@ RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 # ---- Final Stage ----
 FROM base
-# Fix repository URLs for archived Debian Buster
-RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
-        -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
-        -e '/buster-updates/d' /etc/apt/sources.list
-
-# Install the corrected and complete runtime dependencies for WeasyPrint
+# Install the runtime dependencies for WeasyPrint
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
