@@ -24,7 +24,7 @@ RUN pip install --no-cache /wheels/*
 RUN apt-get update && apt-get install -y --no-install-recommends fontconfig && rm -rf /var/lib/apt/lists/*
 
 # 2. Copy your local font files into the container's standard font directory.
-COPY Geist-Regular.otf Geist-Bold.otf /usr/share/fonts/opentype/
+COPY Geist-Black.otf Geist-Bold.otf Geist-SemiBold.otf Geist-Regular.otf /usr/share/fonts/opentype/
 
 # 3. Rebuild the system's font cache so the new fonts are recognized immediately.
 RUN fc-cache -f -v
