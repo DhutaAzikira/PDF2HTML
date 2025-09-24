@@ -240,12 +240,12 @@ async def pdf_to_html_gemini_vision(file: UploadFile = Depends(validate_pdf)):
 
         final_html = converter_response.text.replace("```html", "").replace("```", "").strip()
 
-        print("Sending combined HTML to Gemini (Tagger Agent)...")
-        tagger_prompt_parts = [GEMINI_PROMPT_TAGGER, final_html]
-        tagger_response = model.generate_content(tagger_prompt_parts)
-        tagged_html = tagger_response.text.replace("```html", "").replace("```", "").strip()
+        # print("Sending combined HTML to Gemini (Tagger Agent)...")
+        # tagger_prompt_parts = [GEMINI_PROMPT_TAGGER, final_html]
+        # tagger_response = model.generate_content(tagger_prompt_parts)
+        # tagged_html = tagger_response.text.replace("```html", "").replace("```", "").strip()
 
-        return HTMLResponse(content=tagged_html)
+        return HTMLResponse(content=final_html)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
