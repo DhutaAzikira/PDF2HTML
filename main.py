@@ -218,40 +218,45 @@ async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depe
         if os.path.exists(pdf_path):
             os.remove(pdf_path)
         raise HTTPException(500, detail=f"An error occurred during PDF conversion: {e}")
-@app.post("/pdf-to-html-gemini/", response_class=HTMLResponse, summary="Convert PDF to HTML using Gemini")
-async def pdf_to_html_gemini_vision(file: UploadFile = Depends(validate_pdf)):
-    """
-    Converts a PDF to HTML using Gemini Vision. It ignores all embedded
-    images and only inserts a specific URL for a profile picture.
-    """
+@app.post("/html-to-pdf/", summary="Convert HTML to PDF")
+async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depends(validate_html)):
+    """Converts an uploaded HTML file to a PDF with a continuous page."""
+    pdf_path = f"temp/{uuid.uuid4()}.pdf"
     try:
-        model_id = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
-        model = genai.GenerativeModel(model_id)
-        pdf_bytes = await file.read()
-        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        html_content = await file.read()
+        html_content_str = html_content.decode("utf-8")
 
-        final_html = ""
-        prompt_parts = [GEMINI_PROMPT_CONVERTER]
-        print("Processing PDF pages into images...")
-        for page_num in range(len(pdf_document)):
-            page = pdf_document.load_page(page_num)
-            pix = page.get_pixmap(dpi=150)
-            page_image_pil = Image.open(io.BytesIO(pix.tobytes("png")))
-            prompt_parts.append(page_image_pil)
+        style_injection = """
+        <style>
+          @page {
+            size: 210mm auto; /* A4 width, content height */
+            margin: 0;
+          }
+          body {
+            margin: 0;
+          }
+        </style>
+        """
+        # Add this style block right before the closing </head> tag
+        html_content_str = html_content_str.replace('</head>', f'{style_injection}</head>')
 
-        print(f"Sending all {len(pdf_document)} pages to Gemini (Converter Agent) in a single call...")
-        converter_response = model.generate_content(prompt_parts)
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            page = await browser.new_page()
+            await page.set_content(html_content_str, wait_until="networkidle")
 
-        final_html = converter_response.text.replace("```html", "").replace("```", "").strip()
+            await page.pdf(
+                path=pdf_path,
+                print_background=True
+            )
+            await browser.close()
 
-        # print("Sending combined HTML to Gemini (Tagger Agent)...")
-        # tagger_prompt_parts = [GEMINI_PROMPT_TAGGER, final_html]
-        # tagger_response = model.generate_content(tagger_prompt_parts)
-        # tagged_html = tagger_response.text.replace("```html", "").replace("```", "").strip()
-
-        return HTMLResponse(content=final_html)
+        background_tasks.add_task(os.remove, pdf_path)
+        return FileResponse(pdf_path, media_type='application/pdf', filename="converted.pdf")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+        raise HTTPException(500, detail=f"An error occurred during PDF conversion: {e}")
 
 
 # --- Main Execution ---
