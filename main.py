@@ -209,7 +209,7 @@ async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depe
                 path=pdf_path,
                 format="A4",
                 print_background=True,  # IMPORTANT: Renders background colors and images
-                margin={"top": "20px", "right": "20px", "bottom": "20px", "left": "20px"}  # Optional: Adjust margins
+                # margin={"top": "20px", "right": "20px", "bottom": "20px", "left": "20px"}  # Optional: Adjust margins
             )
 
             await browser.close()
