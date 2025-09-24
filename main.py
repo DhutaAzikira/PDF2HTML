@@ -203,8 +203,15 @@ async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depe
         async with async_playwright() as p:
             browser = await p.chromium.launch()
             page = await browser.new_page()
-            await page.set_content(html_content_str)
-            await page.pdf(path=pdf_path, format="A4")
+            await page.set_content(html_content_str, wait_until="networkidle")  # Ensures fonts are downloaded
+
+            await page.pdf(
+                path=pdf_path,
+                format="A4",
+                print_background=True,  # IMPORTANT: Renders background colors and images
+                margin={"top": "20px", "right": "20px", "bottom": "20px", "left": "20px"}  # Optional: Adjust margins
+            )
+
             await browser.close()
 
         background_tasks.add_task(os.remove, pdf_path)
