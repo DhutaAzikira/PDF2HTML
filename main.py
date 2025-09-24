@@ -196,6 +196,8 @@ async def validate_html(file: UploadFile = File(...)) -> UploadFile:
 async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depends(validate_html)):
     """Converts an uploaded HTML file to a PDF using Playwright."""
     pdf_path = f"temp/{uuid.uuid4()}.pdf"
+    os.makedirs("temp", exist_ok=True)
+
     try:
         html_content = await file.read()
         html_content_str = html_content.decode("utf-8")
@@ -203,9 +205,10 @@ async def html_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = Depe
         async with async_playwright() as p:
             browser = await p.chromium.launch()
             page = await browser.new_page()
+            await page.set_viewport_size({"width": 1280, "height": 1024})
             await page.set_content(html_content_str)
-            # Set the PDF format to A4
-            await page.pdf(path=pdf_path, format="A4")
+            await page.wait_for_load_state('networkidle')
+            await page.pdf(path=pdf_path, format="A4", print_background=True)
             await browser.close()
 
         background_tasks.add_task(os.remove, pdf_path)
